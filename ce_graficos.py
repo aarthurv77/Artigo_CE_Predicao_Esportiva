@@ -191,14 +191,14 @@ def plot_horizontal_bar(data, title, filename, xlabel, ylabel, figsize=(10, 8)):
 def plot_vertical_bar(data, title, filename, xlabel, ylabel, figsize=(10, 6)):
     """Função genérica para criar um gráfico de barras vertical estético."""
     
-    # --- ESTA É A LINHA DA CORREÇÃO ---
-    # Garanta que o .rename() esteja presente
-    df_plot = data.to_frame(name='Frequência').reset_index().rename(columns={'index': 'Categoria'})
-    # --- FIM DA CORREÇÃO ---
+    df_plot = data.to_frame(name='Frequência').reset_index()
+    
+    coluna_categoria = df_plot.columns[0]
+    df_plot = df_plot.rename(columns={coluna_categoria: 'Categoria'})
 
     plt.figure(figsize=figsize)
     
-    # Adicionado 'hue' e 'legend=False' para resolver o FutureWarning
+    # Agora o 'x' e 'hue' funcionarão, pois a coluna 'Categoria' sempre existirá
     barplot = sns.barplot(
         x='Categoria',
         y='Frequência',
@@ -222,8 +222,10 @@ def plot_vertical_bar(data, title, filename, xlabel, ylabel, figsize=(10, 6)):
     plt.ylim(0, data.max() * 1.15) # Ajusta o limite de y para dar espaço aos rótulos
     
     # Ajuste para rotação de rótulos se houver muitas categorias (ex: RQ4)
-    if len(data) > 5:
-        plt.xticks(rotation=15, ha='right')
+    if len(data) > 3 or max(len(str(s)) for s in data.index) > 15: 
+        plt.xticks(rotation=45, ha='right', fontsize=10) 
+    else:
+        plt.xticks(rotation=0, ha='center', fontsize=11) 
         
     plt.tight_layout()
     plt.savefig(filename, dpi=300)
@@ -247,7 +249,19 @@ try:
     # --- RQ2: Esportes ---
     df['Esporte_Limpo'] = df['Esporte'].apply(lambda x: 'Futebol' if 'Futebol' in str(x) else x)
     df['Esporte_Limpo'] = df['Esporte_Limpo'].apply(lambda x: 'Futebol' if 'Soccer' in str(x) else x)
-    sport_counts = df['Esporte_Limpo'].value_counts()
+    
+    sport_abbreviations = {
+        'Basquete (National Basketball Association - NBA)': 'Basquete (NBA)',
+        'Tênis (ATP e WTA)': 'Tênis (ATP/WTA)',
+        'Artes Marciais Mistas (MMA), especificamente UFC (Ultimate Fighting Championship)': 'MMA (UFC)',
+    }
+    df['Esporte_Limpo'] = df['Esporte_Limpo'].replace(sport_abbreviations)
+
+    string_para_remover = 'Não se aplica (Foco na Escala da Indústria Esportiva - macroeconomia do esporte)'
+    df_filtrado_rq2 = df[df['Esporte_Limpo'] != string_para_remover]
+    
+    sport_counts = df_filtrado_rq2['Esporte_Limpo'].value_counts()
+    
     plot_vertical_bar(
         data=sport_counts,
         title="RQ2: Frequência de Esportes Investigados",
