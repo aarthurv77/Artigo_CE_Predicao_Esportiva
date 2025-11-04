@@ -1,1 +1,21 @@
+# Ambiente Virtual
 venv_ce/
+.venv/
+env/
+
+# Cache do Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Arquivos de IDE (VS Code)
+.vscode/
+
+# Arquivos de dados (se forem muito grandes ou sensíveis)
+*.csv
+*.xlsx
+*.parquet
+
+# Outros
+.DS_Store
