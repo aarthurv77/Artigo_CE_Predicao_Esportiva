@@ -203,7 +203,7 @@ def plot_horizontal_bar(data, title, filename, xlabel, ylabel, figsize=(10, 8)):
 
     plt.figure(figsize=figsize)
 
-    # A linha 'legend=False' foi removida
+    # A linha 'legend=False' FOI REMOVIDA
     barplot = sns.barplot(
         x='Frequência',
         y='Categoria',
@@ -247,7 +247,7 @@ def plot_vertical_bar(data, title, filename, xlabel, ylabel, figsize=(10, 6)):
 
     plt.figure(figsize=figsize)
 
-    # A linha 'legend=False' foi removida
+    # A linha 'legend=False' FOI REMOVIDA
     barplot = sns.barplot(
         x='Categoria',
         y='Frequência',
@@ -285,36 +285,38 @@ def plot_vertical_bar(data, title, filename, xlabel, ylabel, figsize=(10, 6)):
     print(f"Gráfico salvo: {filename}")
 
 
-# --- Execução Principal (CORRIGIDA PARA 4 RQs E ARQUIVO CORRETO) ---
+# --- Execução Principal (VERSÃO FINAL CORRIGIDA) ---
 try:
-    # Use o nome do arquivo que você confirmou que está correto
+    # Verifique se o nome do seu arquivo CSV está correto aqui
     file_name = "14 - 14.csv" 
     df = pd.read_csv(file_name, encoding="utf-8")
     print(f"Planilha '{file_name}' carregada com sucesso.")
 
     # --- RQ1 (Panorama - Gráfico 1): Esportes ---
-    df['Esporte_Limpo'] = df['Esporte'].apply(
-        lambda x: 'Futebol' if 'Futebol' in str(x) else x)
-    df['Esporte_Limpo'] = df['Esporte_Limpo'].apply(
-        lambda x: 'Futebol' if 'Soccer' in str(x) else x)
+    
+    # Assegura que a coluna é string e remove espaços extras
+    df['Esporte_Limpo'] = df['Esporte'].astype(str).str.strip()
 
-    # --- CORREÇÃO ADICIONADA: MAPA DE ABREVIAÇÕES ---
-    sport_abbreviations = {
-        'Basquete (NBA)': 'Basquete',
-        'Tênis': 'Tênis',
-        'Ice Hockey (NHL)': 'Hóquei',
-        'Futebol Americano (Sim.)': 'Futebol Americano',
-        'Cricket': 'Cricket',
-        'Voleibol': 'Voleibol',
-        'Futebol': 'Futebol'
-    }
-    df['Esporte_Limpo'] = df['Esporte_Limpo'].apply(lambda x: sport_abbreviations.get(str(x), str(x)))
-    # --- FIM DA CORREÇÃO ---
-
+    # 1. Filtra lixo PRIMEIRO
     mascara_filtro = df['Esporte_Limpo'].str.contains("Não se aplica|indústria", na=False, case=False)
     df_filtrado_rq1 = df[~mascara_filtro].copy()
 
+    # 2. Normaliza Futebol (só para garantir)
+    df_filtrado_rq1.loc[df_filtrado_rq1['Esporte_Limpo'].str.contains('Soccer', case=False), 'Esporte_Limpo'] = 'Futebol'
+    
+    # 3. Normaliza Basquete (PARA JUNTAR "Basquete (NBA)" e "Basquete")
+    df_filtrado_rq1.loc[df_filtrado_rq1['Esporte_Limpo'].str.contains('Basquete', case=False), 'Esporte_Limpo'] = 'Basquete'
+    
+    # 4. Normaliza Tênis (só para garantir)
+    df_filtrado_rq1.loc[df_filtrado_rq1['Esporte_Limpo'].str.contains('Tênis', case=False), 'Esporte_Limpo'] = 'Tênis'
+
+    # 5. Normaliza os outros para nomes curtos (PARA ENCURTAR OS TÍTULOS)
+    df_filtrado_rq1.loc[df_filtrado_rq1['Esporte_Limpo'].str.contains('Ice Hockey', case=False), 'Esporte_Limpo'] = 'Hóquei'
+    df_filtrado_rq1.loc[df_filtrado_rq1['Esporte_Limpo'].str.contains('Futebol Americano', case=False), 'Esporte_Limpo'] = 'Futebol Americano'
+
+    # 6. Agora, conta os valores
     sport_counts = df_filtrado_rq1['Esporte_Limpo'].value_counts()
+    
     plot_vertical_bar(
         data=sport_counts,
         title="RQ1: Frequência de Esportes Investigados",
