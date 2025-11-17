@@ -10,7 +10,7 @@ palette = "viridis"  # Paleta de cores consistente
 
 
 def clean_and_normalize_models(series):
-    """Limpa e normaliza a coluna 'Técnicas de ML Usadas'."""
+    """Limpa e normaliza a coluna 'Técnicas de ML Usadas' e conta artigos por família de modelo."""
     if not pd.api.types.is_string_dtype(series):
         series = series.astype(str)
 
@@ -72,9 +72,13 @@ def clean_and_normalize_models(series):
     ]
 
     all_models = []
+
+    # Agora contamos POR ARTIGO, usando um set para não duplicar modelo dentro do mesmo artigo
     for cell_text in series.dropna():
         cleaned_text = re.sub(r'[\(\)/;]', ',', cell_text)
         models = cleaned_text.split(',')
+
+        models_in_article = set()  # evita duplicar família do modelo no mesmo artigo
 
         for model in models:
             model_strip = model.strip()
@@ -82,8 +86,12 @@ def clean_and_normalize_models(series):
 
             is_noise = any(n.lower() in normalized_model.lower() for n in noise)
             if normalized_model and len(normalized_model) > 3 and not is_noise:
-                all_models.append(normalized_model)
+                models_in_article.add(normalized_model)
 
+        # cada modelo encontrado nesse artigo entra só uma vez
+        all_models.extend(models_in_article)
+
+    # value_counts agora é "número de artigos que usam cada família de modelo"
     return pd.Series(all_models).value_counts()
 
 
