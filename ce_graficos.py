@@ -275,7 +275,8 @@ def plot_vertical_bar(data, title, filename, xlabel, ylabel, figsize=(10, 6)):
     else:
          plt.ylim(0, max_freq * 1.15)
     
-    if len(data) > 5 or max(len(str(s)) for s in data.index) > 15:
+    # Rotação SÓ SE NECESSÁRIO
+    if len(data) > 6 or max(len(str(s)) for s in data.index) > 10:
         plt.xticks(rotation=45, ha='right', fontsize=10)
     else:
         plt.xticks(rotation=0, ha='center', fontsize=11)
@@ -301,20 +302,37 @@ try:
     mascara_filtro = df['Esporte_Limpo'].str.contains("Não se aplica|indústria", na=False, case=False)
     df_filtrado_rq1 = df[~mascara_filtro].copy()
 
-    # 2. Normaliza Futebol (só para garantir)
-    df_filtrado_rq1.loc[df_filtrado_rq1['Esporte_Limpo'].str.contains('Soccer', case=False), 'Esporte_Limpo'] = 'Futebol'
-    
-    # 3. Normaliza Basquete (PARA JUNTAR "Basquete (NBA)" e "Basquete")
-    df_filtrado_rq1.loc[df_filtrado_rq1['Esporte_Limpo'].str.contains('Basquete', case=False), 'Esporte_Limpo'] = 'Basquete'
-    
-    # 4. Normaliza Tênis (só para garantir)
-    df_filtrado_rq1.loc[df_filtrado_rq1['Esporte_Limpo'].str.contains('Tênis', case=False), 'Esporte_Limpo'] = 'Tênis'
+    # 2. CRIA O MAPA DE NORMALIZAÇÃO (PARA UNIFICAR E ENCURTAR)
+    # Este mapa é a correção principal para o seu problema
+    sport_normalization_map = {
+        # Futebol
+        'Futebol': 'Futebol',
+        'Soccer': 'Futebol',
+        # Basquete
+        'Basquete (NBA)': 'Basquete',
+        'Basquete': 'Basquete',
+        # Tênis
+        'Tênis': 'Tênis',
+        # Hóquei
+        'Ice Hockey (NHL)': 'Hóquei',
+        # Futebol Americano
+        'Futebol Americano (Sim.)': 'Futebol Americano',
+        # Cricket
+        'Cricket': 'Cricket',
+        # Voleibol
+        'Voleibol (SuperLiga Brasileira)': 'Voleibol',
+        'Voleibol': 'Voleibol',
+        # UFC
+        'MMA (UFC)': 'UFC',
+        'UFC': 'UFC',
+        'Artes Marciais Mistas (MMA)': 'UFC'
+    }
 
-    # 5. Normaliza os outros para nomes curtos (PARA ENCURTAR OS TÍTULOS)
-    df_filtrado_rq1.loc[df_filtrado_rq1['Esporte_Limpo'].str.contains('Ice Hockey', case=False), 'Esporte_Limpo'] = 'Hóquei'
-    df_filtrado_rq1.loc[df_filtrado_rq1['Esporte_Limpo'].str.contains('Futebol Americano', case=False), 'Esporte_Limpo'] = 'Futebol Americano'
-
-    # 6. Agora, conta os valores
+    # 3. Aplica o mapa
+    # O .get(x, x) significa: "Tente encontrar 'x' no mapa. Se não encontrar, use 'x' (o valor original)."
+    df_filtrado_rq1['Esporte_Limpo'] = df_filtrado_rq1['Esporte_Limpo'].apply(lambda x: sport_normalization_map.get(x, x))
+    
+    # 4. Agora, conta os valores
     sport_counts = df_filtrado_rq1['Esporte_Limpo'].value_counts()
     
     plot_vertical_bar(
@@ -334,7 +352,7 @@ try:
         title="RQ1: Evolução das Publicações por Ano",
         filename="RQ1_Publicacoes_por_Ano.png",  
         xlabel="Ano de Publicação",
-        ylabel="Frequência (Nº de Artigos)"
+        ylabel="Frequência (Nos de Artigos)"
     )
 
     # --- RQ2: Modelos de ML ---
