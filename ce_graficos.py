@@ -6,7 +6,8 @@ from collections import Counter
 
 # Configurações estéticas globais para os gráficos
 sns.set_theme(style="whitegrid")
-palette = "viridis" # Paleta de cores consistente
+palette = "viridis"  # Paleta de cores consistente
+
 
 def clean_and_normalize_models(series):
     """Limpa e normaliza a coluna 'Técnicas de ML Usadas'."""
@@ -52,30 +53,33 @@ def clean_and_normalize_models(series):
         'Modelos Bayesianos': 'Modelos Bayesianos',
         'Bayesian Networks': 'Modelos Bayesianos',
     }
-    
+
     noise = [
-        'etc', 'ex:', 'para', 'seleção de features', 'outros', 'Ensemble Methods', 
+        'etc', 'ex:', 'para', 'seleção de features', 'outros', 'Ensemble Methods',
         'SHAP', 'LIME', 'interpretabilidade', 'ELO Rating', 'SHAP'
     ]
-    
+
     all_models = []
     for cell_text in series.dropna():
         # Substitui parênteses e caracteres especiais por vírgulas para separar
         cleaned_text = re.sub(r'[\(\)/;]', ',', cell_text)
         models = cleaned_text.split(',')
-        
+
         for model in models:
             model_strip = model.strip()
-            
+
             # Normaliza
-            normalized_model = model_normalization_map.get(model_strip, model_strip)
-            
+            normalized_model = model_normalization_map.get(
+                model_strip, model_strip)
+
             # Filtra ruídos e nomes curtos/genéricos
-            is_noise = any(n.lower() in normalized_model.lower() for n in noise)
+            is_noise = any(n.lower() in normalized_model.lower()
+                           for n in noise)
             if normalized_model and len(normalized_model) > 3 and not is_noise:
                 all_models.append(normalized_model)
-                
+
     return pd.Series(all_models).value_counts()
+
 
 def clean_and_normalize_metrics(series):
     """Limpa e normaliza a coluna 'Métricas de Avaliação'."""
@@ -108,16 +112,17 @@ def clean_and_normalize_metrics(series):
         'Sensitivity': 'Recall',
         'Specificity': 'Specificity',
     }
-    
+
     all_metrics = []
     for cell_text in series.dropna():
         cleaned_text = re.sub(r'[\(\)/;]', ',', cell_text)
         metrics = cleaned_text.split(',')
-        
+
         for metric in metrics:
             metric_strip = metric.strip()
-            normalized_metric = metric_normalization_map.get(metric_strip, metric_strip)
-            
+            normalized_metric = metric_normalization_map.get(
+                metric_strip, metric_strip)
+
             if normalized_metric and len(normalized_metric) > 2:
                 # Tratamento especial para evitar contagem de métricas parciais
                 found = False
@@ -127,10 +132,11 @@ def clean_and_normalize_metrics(series):
                         found = True
                         break
                 if not found and len(normalized_metric) > 3 and 'cit' not in normalized_metric:
-                     all_metrics.append(normalized_metric)
+                    all_metrics.append(normalized_metric)
 
     # Remove duplicatas por artigo (um artigo pode citar 'Accuracy' 3x)
     return pd.Series(all_metrics).value_counts()
+
 
 def clean_and_normalize_limitations(df_limit, df_gaps):
     """Codifica tematicamente as colunas 'Limitações' e 'Lacunas'."""
@@ -142,26 +148,28 @@ def clean_and_normalize_limitations(df_limit, df_gaps):
         "Qualidade/Falta de Features": r'qualidade dos dados|features|variáveis|dados limitados|incompletos',
         "Overfitting": r'overfitting|sobreajuste',
     }
-    
+
     all_text = df_limit.dropna().astype(str) + " " + df_gaps.dropna().astype(str)
     themes_found = []
-    
+
     for text in all_text:
-        found_in_article = set() # Evita contagem dupla do mesmo tema no *mesmo* artigo
+        found_in_article = set()  # Evita contagem dupla do mesmo tema no *mesmo* artigo
         for theme, pattern in theme_map.items():
             if re.search(pattern, text, re.IGNORECASE):
                 found_in_article.add(theme)
         themes_found.extend(list(found_in_article))
-        
+
     return pd.Series(themes_found).value_counts()
+
 
 def plot_horizontal_bar(data, title, filename, xlabel, ylabel, figsize=(10, 8)):
     """Função genérica para criar um gráfico de barras horizontal estético."""
     # Esta linha é crucial
-    df_plot = data.to_frame(name='Frequência').reset_index().rename(columns={'index': 'Categoria'})
-    
+    df_plot = data.to_frame(name='Frequência').reset_index().rename(
+        columns={'index': 'Categoria'})
+
     plt.figure(figsize=figsize)
-    
+
     # Adicionado 'hue' e 'legend=False' para resolver o FutureWarning
     barplot = sns.barplot(
         x='Frequência',
@@ -171,33 +179,35 @@ def plot_horizontal_bar(data, title, filename, xlabel, ylabel, figsize=(10, 8)):
         hue='Categoria',
         legend=False
     )
-    
+
     # Adiciona rótulos de dados
     for p in barplot.patches:
         width = p.get_width()
-        plt.text(width + 0.3, # Posição x (um pouco à frente da barra)
-                 p.get_y() + p.get_height() / 2, # Posição y (centro da barra)
-                 f'{width:.0f}', # O texto
+        plt.text(width + 0.3,  # Posição x (um pouco à frente da barra)
+                 p.get_y() + p.get_height() / 2,  # Posição y (centro da barra)
+                 f'{width:.0f}',  # O texto
                  va='center')
-    
+
     plt.title(title, fontsize=16, fontweight='bold')
     plt.xlabel(xlabel, fontsize=12)
     plt.ylabel(ylabel, fontsize=12)
-    plt.xlim(0, data.max() * 1.15) # Ajusta o limite de x para dar espaço aos rótulos
+    # Ajusta o limite de x para dar espaço aos rótulos
+    plt.xlim(0, data.max() * 1.15)
     plt.tight_layout()
     plt.savefig(filename, dpi=300)
     print(f"Gráfico salvo: {filename}")
 
+
 def plot_vertical_bar(data, title, filename, xlabel, ylabel, figsize=(10, 6)):
     """Função genérica para criar um gráfico de barras vertical estético."""
-    
+
     df_plot = data.to_frame(name='Frequência').reset_index()
-    
+
     coluna_categoria = df_plot.columns[0]
     df_plot = df_plot.rename(columns={coluna_categoria: 'Categoria'})
 
     plt.figure(figsize=figsize)
-    
+
     # Agora o 'x' e 'hue' funcionarão, pois a coluna 'Categoria' sempre existirá
     barplot = sns.barplot(
         x='Categoria',
@@ -207,39 +217,41 @@ def plot_vertical_bar(data, title, filename, xlabel, ylabel, figsize=(10, 6)):
         hue='Categoria',
         legend=False
     )
-    
+
     # Adiciona rótulos de dados
     for p in barplot.patches:
         barplot.annotate(format(p.get_height(), '.0f'),
                          (p.get_x() + p.get_width() / 2., p.get_height()),
-                         ha = 'center', va = 'center',
-                         xytext = (0, 9),
-                         textcoords = 'offset points')
+                         ha='center', va='center',
+                         xytext=(0, 9),
+                         textcoords='offset points')
 
     plt.title(title, fontsize=16, fontweight='bold')
     plt.xlabel(xlabel, fontsize=12)
     plt.ylabel(ylabel, fontsize=12)
-    plt.ylim(0, data.max() * 1.15) # Ajusta o limite de y para dar espaço aos rótulos
-    
+    # Ajusta o limite de y para dar espaço aos rótulos
+    plt.ylim(0, data.max() * 1.15)
+
     # Ajuste para rotação de rótulos se houver muitas categorias (ex: RQ4)
-    if len(data) > 3 or max(len(str(s)) for s in data.index) > 15: 
-        plt.xticks(rotation=45, ha='right', fontsize=10) 
+    if len(data) > 3 or max(len(str(s)) for s in data.index) > 15:
+        plt.xticks(rotation=45, ha='right', fontsize=10)
     else:
-        plt.xticks(rotation=0, ha='center', fontsize=11) 
-        
+        plt.xticks(rotation=0, ha='center', fontsize=11)
+
     plt.tight_layout()
     plt.savefig(filename, dpi=300)
     print(f"Gráfico salvo: {filename}")
 
+
 # --- Execução Principal ---
 try:
-    df = pd.read_csv("14 - 14.csv")
-    print("Planilha '14 - 14.csv' carregada com sucesso.")
+    df = pd.read_csv("14_atualizado.csv", encoding="utf-8")
+    print("Planilha '14_atualizado.csv' carregada com sucesso.")
 
     # --- RQ1: Modelos de ML ---
     model_counts = clean_and_normalize_models(df['Técnicas de ML Usadas'])
     plot_horizontal_bar(
-        data=model_counts.head(10), # Mostra o Top 10
+        data=model_counts.head(10),  # Mostra o Top 10
         title="RQ1: Frequência de Modelos de ML Utilizados (Top 10)",
         filename="RQ1_Modelos_Frequencia.png",
         xlabel="Frequência (Nº de Artigos)",
@@ -247,9 +259,11 @@ try:
     )
 
     # --- RQ2: Esportes ---
-    df['Esporte_Limpo'] = df['Esporte'].apply(lambda x: 'Futebol' if 'Futebol' in str(x) else x)
-    df['Esporte_Limpo'] = df['Esporte_Limpo'].apply(lambda x: 'Futebol' if 'Soccer' in str(x) else x)
-    
+    df['Esporte_Limpo'] = df['Esporte'].apply(
+        lambda x: 'Futebol' if 'Futebol' in str(x) else x)
+    df['Esporte_Limpo'] = df['Esporte_Limpo'].apply(
+        lambda x: 'Futebol' if 'Soccer' in str(x) else x)
+
     sport_abbreviations = {
         'Basquete (National Basketball Association - NBA)': 'Basquete (NBA)',
         'Tênis (ATP e WTA)': 'Tênis (ATP/WTA)',
@@ -259,22 +273,22 @@ try:
 
     string_para_remover = 'Não se aplica (Foco na Escala da Indústria Esportiva - macroeconomia do esporte)'
     df_filtrado_rq2 = df[df['Esporte_Limpo'] != string_para_remover]
-    
+
     sport_counts = df_filtrado_rq2['Esporte_Limpo'].value_counts()
-    
+
     plot_vertical_bar(
         data=sport_counts,
         title="RQ2: Frequência de Esportes Investigados",
         filename="RQ2_Esportes_Frequencia.png",
         xlabel="Esporte",
         ylabel="Frequência (Nº de Artigos)",
-        figsize=(10, 7) # Ajuste de tamanho para legibilidade dos rótulos
+        figsize=(10, 7)  # Ajuste de tamanho para legibilidade dos rótulos
     )
-    
+
     # --- RQ3: Métricas de Avaliação ---
     metric_counts = clean_and_normalize_metrics(df['Métricas de Avaliação'])
     plot_horizontal_bar(
-        data=metric_counts.head(10), # Mostra o Top 10
+        data=metric_counts.head(10),  # Mostra o Top 10
         title="RQ3: Frequência de Métricas de Avaliação (Top 10)",
         filename="RQ3_Metricas_Frequencia.png",
         xlabel="Frequência (Nº de Artigos)",
@@ -282,14 +296,15 @@ try:
     )
 
     # --- RQ4: Lacunas e Limitações (Quantitativo) ---
-    limitation_counts = clean_and_normalize_limitations(df['Limitações'], df['Lacunas'])
+    limitation_counts = clean_and_normalize_limitations(
+        df['Limitações'], df['Lacunas'])
     plot_vertical_bar(
         data=limitation_counts,
         title="RQ4: Frequência de Limitações e Lacunas Reportadas",
         filename="RQ4_Limitacoes_Frequencia.png",
         xlabel="Tema da Limitação",
         ylabel="Frequência (Nº de Artigos)",
-        figsize=(12, 7) # Ajuste para legibilidade dos rótulos
+        figsize=(12, 7)  # Ajuste para legibilidade dos rótulos
     )
 
     # --- RQ5: Publicações por Ano ---
